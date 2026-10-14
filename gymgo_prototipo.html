@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GymGo – Prototipo de media fidelidad</title>
+<style>
+:root{--bg:#eef2f7;--tx:#0b1f3a;--mu:#5b6b80;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1522;--tx:#e8eef7;--mu:#9fb0c6}}
+:root[data-theme="dark"]{--bg:#0e1522;--tx:#e8eef7;--mu:#9fb0c6}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font-family:Calibri,Arial,sans-serif;display:flex;flex-wrap:wrap;gap:24px;justify-content:center;align-items:flex-start;padding:20px}
+.side{max-width:300px}.side h1{font-size:22px;margin:0 0 6px}.side p,.side li{font-size:14px;color:var(--mu)}.side li{margin:4px 0}
+.phone{width:340px;height:660px;background:#fff;color:#0b1f3a;border-radius:34px;border:8px solid #0b1f3a;display:flex;flex-direction:column;overflow:hidden;position:relative}
+.top{background:#0b1f3a;color:#fff;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;font-weight:700}
+.sw{font-size:12px;font-weight:400;display:flex;gap:6px;align-items:center;cursor:pointer}
+.sw i{width:32px;height:18px;border-radius:9px;background:#64748b;position:relative;display:inline-block}.sw i:after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:.2s}.sw.on i{background:#22c55e}.sw.on i:after{left:16px}
+.body{flex:1;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+h2{font-size:17px;margin:2px 0}small{color:#5b6b80}
+.card{border:1px solid #d6dde8;border-radius:12px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:8px;background:#f8fafc}
+.card.tap{cursor:pointer}.card b{display:block;font-size:15px}
+.chip{font-size:12px;font-weight:700;padding:4px 10px;border-radius:12px;color:#fff;white-space:nowrap}
+.g{background:#16a34a}.y{background:#d97706}.r{background:#dc2626}.x{background:#64748b}
+.btn{background:#2563eb;color:#fff;border:0;border-radius:12px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;width:100%}
+.btn.o{background:#fff;color:#dc2626;border:2px solid #dc2626}.btn.big{padding:26px;font-size:20px}
+.nav{display:flex;border-top:1px solid #d6dde8}.nav button{flex:1;border:0;background:#fff;padding:12px 0;font-size:12px;color:#5b6b80;cursor:pointer}.nav button.a{color:#2563eb;font-weight:700;border-top:3px solid #2563eb}
+.toast{position:absolute;left:16px;right:16px;bottom:70px;background:#16a34a;color:#fff;padding:12px;border-radius:12px;text-align:center;font-weight:700;display:none}
+.slots{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}.slot{padding:12px 0;text-align:center;border-radius:10px;border:2px solid #d6dde8;cursor:pointer;font-weight:700}.slot.s{border-color:#2563eb;background:#dbeafe}.slot.d{opacity:.4;cursor:not-allowed}
+.meter{height:12px;border-radius:6px;background:#e2e8f0;overflow:hidden}.meter div{height:100%;width:55%;background:#d97706}
+</style></head><body>
+<div class="side"><h1>GymGo</h1><p>Prototipo de media fidelidad. Toca los elementos: se puede reservar una máquina o clase, cancelar y activar el Modo simple.</p>
+<ol><li>Inicio / dashboard (RF001, RF009, RF010)</li><li>Disponibilidad de máquinas (RF002)</li><li>Reserva de máquina (RF003)</li><li>Clases y cupos (RF005, RF006)</li><li>Agenda e historial (RF004, RF007)</li><li>Modo simple (RNF001, RNF006)</li></ol>
+<p>Prototipo conceptual: los datos son de ejemplo y no representan una app implementada.</p></div>
+<div class="phone"><div class="top"><span id="ttl">GymGo</span><span class="sw" id="sw"><span>Modo simple</span><i></i></span></div>
+<div class="body" id="v"></div><div class="toast" id="t"></div>
+<div class="nav" id="nav"></div></div>
+<script>
+var M=[{n:"Press banca",s:"g"},{n:"Prensa de piernas",s:"r"},{n:"Polea alta",s:"g"},{n:"Remo sentado",s:"x"},{n:"Caminadora 2",s:"g"}];
+var C=[{n:"Yoga · 7:00",c:3},{n:"Spinning · 8:00",c:0},{n:"Funcional · 18:00",c:8}];
+var H=["6:30","7:00","7:30","8:00","8:30","9:00"],busy={"7:30":1};
+var R=[],view="home",simple=false,sel=null,mach=null,tm=null;
+var lab={g:"Libre",r:"Ocupada",x:"Fuera de servicio"};
+var navs=[["home","Inicio"],["mach","Máquinas"],["cls","Clases"],["ag","Agenda"]];
+function go(x){view=x;draw()}
+function toast(m){var t=document.getElementById("t");t.textContent=m;t.style.display="block";setTimeout(function(){t.style.display="none"},1800)}
+function draw(){var h="",v=document.getElementById("v");
+ if(simple){document.getElementById("nav").innerHTML="";
+  h='<h2>¿Qué quieres hacer?</h2><button class="btn big" onclick="simple=false;go(\'mach\');sw()">VER MÁQUINAS</button><button class="btn big" onclick="simple=false;go(\'cls\');sw()">RESERVAR CLASE</button><button class="btn big" onclick="simple=false;go(\'ag\');sw()">MIS RESERVAS</button>';v.innerHTML=h;return}
+ if(view=="home"){h='<h2>Hola, Fabrizio</h2><div class="card"><div><small>Próxima reserva</small><b>'+(R[0]?R[0].n+' · '+R[0].h:'Sin reservas')+'</b></div>'+(R[0]?'<span class="chip g">Confirmada</span>':'')+'</div><div class="card"><div><small>Afluencia ahora</small><b>Media</b><div class="meter" style="width:150px;margin-top:6px"><div></div></div></div><span class="chip y">55%</span></div><div class="card tap" onclick="go(\'cls\')"><div><small>Clase de hoy</small><b>Yoga · 7:00</b></div><span class="chip g">3 cupos</span></div><button class="btn" onclick="go(\'mach\')">Ver disponibilidad</button>'}
+ if(view=="mach"){h='<h2>Zona de pesas</h2><small>Toca una máquina libre para reservar</small>';M.forEach(function(m,i){h+='<div class="card'+(m.s=="g"?' tap" onclick="mach='+i+';tm=null;go(\'res\')':'')+'"><b>'+m.n+'</b><span class="chip '+m.s+'">'+lab[m.s]+'</span></div>'})}
+ if(view=="res"){h='<h2>'+M[mach].n+'</h2><small>Hoy · elige tu horario</small><div class="slots">';H.forEach(function(x){var d=busy[x];h+='<div class="slot'+(d?' d':'')+(tm==x?' s':'')+'" '+(d?'':'onclick="tm=\''+x+'\';draw()"')+'>'+x+'</div>'});h+='</div><small>Paso 1: horario · Paso 2: confirmar</small><button class="btn" onclick="conf()">Confirmar reserva</button>'}
+ if(view=="cls"){h='<h2>Clases grupales</h2>';C.forEach(function(c,i){var on=R.some(function(r){return r.n==c.n});h+='<div class="card"><div><b>'+c.n+'</b><small>'+(c.c?c.c+' cupos':'Sin cupos')+'</small></div><button class="chip '+(on?'x':c.c?'g':'y')+'" style="border:0;cursor:pointer" onclick="cl('+i+')">'+(on?'Cancelar':c.c?'Reservar':'Lista de espera')+'</button></div>'})}
+ if(view=="ag"){h='<h2>Mis reservas</h2>';if(!R.length)h+='<small>Aún no tienes reservas.</small>';R.forEach(function(r,i){h+='<div class="card"><div><b>'+r.n+'</b><small>Hoy · '+r.h+'</small></div><span class="chip g">Confirmada</span></div>'});if(R.length)h+='<button class="btn o" onclick="R.shift();toast(\'Reserva cancelada\');draw()">Cancelar próxima reserva</button>';h+='<h2>Historial</h2><div class="card"><b>Prensa de piernas</b><small>Ayer · 6:30</small></div>'}
+ v.innerHTML=h;document.getElementById("nav").innerHTML=navs.map(function(n){return'<button class="'+((view==n[0]||(view=="res"&&n[0]=="mach"))?'a':'')+'" onclick="go(\''+n[0]+'\')">'+n[1]+'</button>'}).join("")}
+function conf(){if(!tm){toast("Elige un horario");return}busy[tm]=1;R.unshift({n:M[mach].n,h:tm});R.sort(function(a,b){return a.h<b.h?-1:1});toast("Reserva confirmada");go("ag")}
+function cl(i){var c=C[i],k=-1;R.forEach(function(r,j){if(r.n==c.n)k=j});if(k>=0){R.splice(k,1);c.c++;toast("Clase cancelada")}else if(c.c){c.c--;R.push({n:c.n,h:c.n.split("· ")[1]});R.sort(function(a,b){return a.h<b.h?-1:1});toast("Clase reservada")}else toast("Agregado a lista de espera");draw()}
+function sw(){document.getElementById("sw").className="sw"+(simple?" on":"");draw()}
+document.getElementById("sw").onclick=function(){simple=!simple;sw()};
+draw();
+</script></body></html>
